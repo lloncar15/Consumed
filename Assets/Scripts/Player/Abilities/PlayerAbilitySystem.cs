@@ -13,7 +13,7 @@ public class PlayerAbilitySystem : MonoBehaviour {
         new AbilityBinding(AbilitySlot.Ability4)
     };
     
-    private PlayerController _playerController;
+    private EnhancedPlayerController _playerController;
     private readonly Dictionary<AbilitySlot, PlayerAbility> _abilities = new Dictionary<AbilitySlot, PlayerAbility>();
     
     // Events
@@ -21,7 +21,7 @@ public class PlayerAbilitySystem : MonoBehaviour {
     public event Action<AbilitySlot, PlayerAbility> OnAbilityActivated;
     
     private void Awake() {
-        _playerController = GetComponent<PlayerController>();
+        _playerController = GetComponent<EnhancedPlayerController>();
         
         // Initialize ability dictionary
         foreach (AbilityBinding binding in _abilityBindings.Where(binding => binding.Ability != null)) {

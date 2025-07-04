@@ -41,10 +41,6 @@ public class PlayerController : MonoBehaviour
     private float _jumpHoldCounter;
     private float _dashCooldownCounter;
     
-    // Physics
-    private float _gravityStrength;
-    private float _gravityScale;
-    
     // Events
     public event Action<AbilitySlot> OnAbilityUsed;
     public event Action OnJump;
@@ -60,10 +56,7 @@ public class PlayerController : MonoBehaviour
         _inputActions = new PlayerInputActions();
         SetupInputCallbacks();
         
-        // Calculate gravity
-        _gravityStrength = -(2 * stats.jumpForce) / (stats.jumpHoldDuration * stats.jumpHoldDuration);
-        _gravityScale = _gravityStrength / Physics2D.gravity.y;
-        _rb.gravityScale = _gravityScale;
+        _rb.gravityScale = stats.gravityScale;
     }
     
     private void OnEnable()
@@ -214,21 +207,29 @@ public class PlayerController : MonoBehaviour
     private void HandleGravity() {
         if (_isDashing) return;
 
-        _rb.gravityScale = _rb.linearVelocity.y switch {
-            // Apply different gravity scales
-            < 0 => _gravityScale * stats.fallGravityMultiplier,
-            > 0 when !_jumpHeld => _gravityScale * stats.quickFallGravityMultiplier,
-            _ => _gravityScale
-        };
+        // Apply different gravity scales based on movement state
+        if (_rb.linearVelocity.y < 0)
+        {
+            // Falling - apply heavier gravity for better game feel
+            _rb.gravityScale = stats.gravityScale * stats.fallGravityMultiplier;  // 3 * 4 = 12
+        }
+        else if (_rb.linearVelocity.y > 0 && !_jumpHeld)
+        {
+            // Rising but not holding jump - cut jump short
+            _rb.gravityScale = stats.gravityScale * stats.quickFallGravityMultiplier;  // 3 * 6 = 18
+        }
+        else
+        {
+            // Normal gravity
+            _rb.gravityScale = stats.gravityScale;  // 3
+        }
     }
     
-    private void HandleDash()
-    {
-        if (_dashPressed && _canDash && stats.canDash)
-        {
-            StartCoroutine(DashCoroutine());
-            _dashPressed = false;
-        }
+    private void HandleDash() {
+        if (!_dashPressed || !_canDash || !stats.canDash) return;
+        
+        StartCoroutine(DashCoroutine());
+        _dashPressed = false;
     }
     
     private IEnumerator DashCoroutine()
@@ -254,7 +255,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(stats.dashDuration);
         
         // End dash
-        _rb.gravityScale = originalGravity;
+        _rb.gravityScale = stats.gravityScale;
         _isDashing = false;
         
         // Maintain some momentum

@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 214b4f71f52bf8c42a45ccd3efaa3cf1, type: 3}
+  m_Name: EnhancedPlayerMovementStats
+  m_EditorClassIdentifier: 
+  maxRunSpeed: 14
+  runAcceleration: 120
+  groundDeceleration: 60
+  airDeceleration: 30
+  frictionAmount: 0.2
+  horizontalDeadZone: 0.1
+  jumpForce: 36
+  jumpCutMultiplier: 0.5
+  jumpHoldDuration: 0.15
+  gravityScale: 3
+  fallGravityMultiplier: 1.5
+  quickFallGravityMultiplier: 2
+  maxFallSpeed: 10
+  apexSpeedMultiplier: 1.25
+  apexGravityMultiplier: 0.4
+  apexThreshold: 2
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  jumpGracePeriod: 0.05
+  canDash: 1
+  dashSpeed: 30
+  dashDuration: 0.2
+  dashCooldown: 1
+  dashThroughEnemies: 1
+  preserveMomentumAfterDash: 1
+  groundCheckDistance: 0.05
+  ceilingCheckDistance: 0.05
+  groundingForce: -1.5
+  maxSlopeAngle: 45
+  slopeSpeedIncrease: 1.5
+  slopeSpeedDecrease: 0.5
+  externalForceDecay: 5
+  maxExternalForce: 50
+  canWallSlide: 1
+  wallSlideSpeed: 3
+  canLedgeGrab: 1
+  canCrouch: 1
+  crouchSpeedMultiplier: 0.5
+  idleThreshold: 0.01
+  airControlMultiplier: 0.85
+  turnSmoothness: 0.1
+  speedMultiplier: 1
+  jumpMultiplier: 1
+  dashSpeedMultiplier: 1

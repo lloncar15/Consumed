@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700bff314c0e932449546de7335f23f5, type: 3}
   m_Name: DefaultPlayerStats
   m_EditorClassIdentifier: 
-  maxRunSpeed: 12
-  runAcceleration: 2.5
+  maxRunSpeed: 20
+  runAcceleration: 2.95
   runDecceleration: 2
-  frictionAmount: 0.2
-  jumpForce: 25
-  jumpCutMultiplier: 0.5
-  jumpHoldDuration: 0.15
+  frictionAmount: 0.01
+  jumpForce: 15
+  jumpCutMultiplier: 0.3
+  jumpHoldDuration: 0.1
   gravityScale: 3
-  fallGravityMultiplier: 4
+  fallGravityMultiplier: 3
   quickFallGravityMultiplier: 6
   coyoteTime: 0.1
   jumpBufferTime: 0.1
@@ -28,8 +28,8 @@ MonoBehaviour:
   dashSpeed: 30
   dashDuration: 0.2
   dashCooldown: 1
-  idleThreshold: 0.01
-  airDragMultiplier: 0.85
+  idleThreshold: 0.1
+  airDragMultiplier: 0.67
   speedMultiplier: 1
   jumpMultiplier: 1
   dashSpeedMultiplier: 1
