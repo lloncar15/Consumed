@@ -148,7 +148,7 @@ public class Bubble : MonoBehaviour
         // Apply boundary forces directly to velocity (gradual pushback)
         if (pushForce != Vector2.zero)
         {
-            _velocity += pushForce * deltaTime;
+            _velocity += pushForce * Time.deltaTime;
         }
         
         // Hard boundary check - destroy if way outside bounds
