@@ -139,8 +139,11 @@ public class Bubble : MonoBehaviour
             pushForce.y = settings.boundaryPushStrength * fadeAmount;
         }
         
-        // Apply boundary forces
-        AddExternalForce(pushForce);
+        // Apply boundary forces directly to velocity (gradual pushback)
+        if (pushForce != Vector2.zero)
+        {
+            _velocity += pushForce * deltaTime;
+        }
         
         // Hard boundary check - destroy if way outside bounds
         if (Mathf.Abs(position.x) > levelBounds.x + 2f || 
