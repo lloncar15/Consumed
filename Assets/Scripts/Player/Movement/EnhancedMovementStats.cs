@@ -1,23 +1,23 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "EnhancedPlayerMovementStats", menuName = "Player/Enhanced Movement Stats")]
-public class EnhancedPlayerMovementStats : ScriptableObject {
+public class EnhancedPlayerMovementStats : ScriptableObject
+{
     [Header("Run")]
     [Range(1f, 100f)] public float maxRunSpeed = 14f;
     [Range(0.01f, 150f)] public float runAcceleration = 120f;
     [Range(0.01f, 150f)] public float groundDeceleration = 60f;
     [Range(0.01f, 150f)] public float airDeceleration = 30f;
-    [Range(0.01f, 1f)] public float frictionAmount = 0.2f;
     [Range(0.01f, 0.99f)] public float horizontalDeadZone = 0.1f;
     
     [Header("Jump")]
-    [Range(1f, 50f)] public float jumpForce = 36f;
+    [Range(1f, 50f)] public float jumpForce = 25f;
     [Range(0f, 1f)] public float jumpCutMultiplier = 0.5f;
     [Range(0f, 1f)] public float jumpHoldDuration = 0.15f;
     [Range(1f, 10f)] public float gravityScale = 3f;
     [Range(1f, 20f)] public float fallGravityMultiplier = 1.5f;
     [Range(1f, 20f)] public float quickFallGravityMultiplier = 2f;
-    [Range(0f, 10f)] public float maxFallSpeed = 40f;
+    [Range(0f, 50f)] public float maxFallSpeed = 25f;
     
     [Header("Apex Modifiers - Game Feel")]
     [Tooltip("Horizontal speed multiplier at jump apex"), Range(1f, 2f)] 

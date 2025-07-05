@@ -319,10 +319,11 @@ public class EnhancedPlayerController : MonoBehaviour
     private void HandleJump()
     {
         // Variable jump height
-        if (_isJumping && !_jumpHeld && _velocity.y > 0)
+        if (_isJumping && !_jumpHeld && _rb.linearVelocity.y > 0)
         {
             _endedJumpEarly = true;
-            _velocity.y *= stats.jumpCutMultiplier;
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _rb.linearVelocity.y * stats.jumpCutMultiplier);
+            _velocity.y = _rb.linearVelocity.y;
             _isJumping = false;
         }
         
@@ -344,7 +345,6 @@ public class EnhancedPlayerController : MonoBehaviour
         if (_isGrounded && _velocity.y <= 0)
         {
             _velocity.y = stats.groundingForce;
-            _rb.gravityScale = 0; // Disable gravity while grounded
         }
         else
         {
@@ -368,6 +368,9 @@ public class EnhancedPlayerController : MonoBehaviour
             }
             
             _rb.gravityScale = _baseGravityScale * gravityMultiplier;
+            
+            // Let physics handle the velocity
+            _velocity.y = _rb.linearVelocity.y;
             
             // Clamp fall speed
             if (_velocity.y < -stats.maxFallSpeed)
@@ -460,7 +463,14 @@ public class EnhancedPlayerController : MonoBehaviour
     {
         if (!_isDashing)
         {
-            _rb.linearVelocity = _velocity;
+            // Only set X velocity, let physics handle Y
+            _rb.linearVelocity = new Vector2(_velocity.x, _rb.linearVelocity.y);
+            
+            // Apply Y velocity only when we're explicitly setting it (jump, dash, external forces)
+            if (Mathf.Abs(_velocity.y - _rb.linearVelocity.y) > 0.1f)
+            {
+                _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _velocity.y);
+            }
         }
         
         // Sync velocity with rigidbody
@@ -475,7 +485,10 @@ public class EnhancedPlayerController : MonoBehaviour
         _jumpHoldCounter = 0;
         _endedJumpEarly = false;
         
+        // Set velocity directly on rigidbody
+        _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, stats.CurrentJumpForce);
         _velocity.y = stats.CurrentJumpForce;
+        
         OnJump?.Invoke();
     }
     
