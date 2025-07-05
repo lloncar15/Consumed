@@ -10,6 +10,8 @@ public class BubbleMovementSettings : ScriptableObject
     [Range(0f, 5f)] public float horizontalDriftSpeed = 1f;
     [Tooltip("Speed of vertical bobbing motion")]
     [Range(0f, 2f)] public float verticalBobSpeed = 0.5f;
+    [Tooltip("Maximum total speed bubble can move (prevents extreme speeds from combined forces)")]
+    [Range(1f, 20f)] public float maxSpeed = 8f;
     
     [Header("Perlin Noise Movement")]
     [Tooltip("How quickly the noise pattern changes (higher = more erratic movement)")]
@@ -69,6 +71,7 @@ public class BubbleMovementSettings : ScriptableObject
     public float CurrentVerticalBob => verticalBobSpeed * chaosMultiplier;
     public float CurrentPerlinAmplitude => perlinAmplitude * chaosMultiplier * difficultyMultiplier;
     public float CurrentBobAmplitude => bobAmplitude * chaosMultiplier;
+    public float CurrentMaxSpeed => maxSpeed * speedMultiplier * difficultyMultiplier;
     
     // Boundary helpers
     public Vector2 GetLevelBounds() => new Vector2(levelWidth, levelHeight);

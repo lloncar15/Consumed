@@ -101,6 +101,12 @@ public class Bubble : MonoBehaviour
         // Apply external forces
         _velocity += _externalForce * settings.externalForceSensitivity;
         
+        // Clamp velocity to max speed
+        if (_velocity.magnitude > settings.CurrentMaxSpeed)
+        {
+            _velocity = _velocity.normalized * settings.CurrentMaxSpeed;
+        }
+        
         // Update position
         _bubbleTransform.position += (Vector3)_velocity * deltaTime;
         
