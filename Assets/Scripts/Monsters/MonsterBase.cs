@@ -63,6 +63,7 @@ public abstract class MonsterBase : MonoBehaviour
     protected float stateTimer;
     protected float lifetime;
     protected float lastAttackTime;
+    protected bool hasHitPlayerThisAttack;
     
     // Game Manager reference
     protected GameManager gameManager;
@@ -210,13 +211,15 @@ public abstract class MonsterBase : MonoBehaviour
         if (stateTimer >= totalAttackTime)
         {
             lastAttackTime = Time.time;
-            TransitionToState(MonsterState.Chasing);
+            OnAttackComplete();
+            TransitionToState(GetStateAfterAttack());
         }
         else if (stateTimer >= attackWindupTime && stateTimer < totalAttackTime)
         {
-            // Attack is active - check for hit
-            if (IsPlayerInRange(attackRange))
+            // Attack is active - check for hit (only once per attack)
+            if (!hasHitPlayerThisAttack && IsPlayerInRange(attackRange))
             {
+                hasHitPlayerThisAttack = true;
                 HitPlayer();
             }
         }
@@ -244,6 +247,8 @@ public abstract class MonsterBase : MonoBehaviour
         switch (state)
         {
             case MonsterState.Attacking:
+                hasHitPlayerThisAttack = false;
+                OnAttackStart();
                 OnMonsterAttackStart?.Invoke(this);
                 break;
         }
@@ -291,8 +296,14 @@ public abstract class MonsterBase : MonoBehaviour
         OnMonsterDied?.Invoke(this);
     }
     
-    // Abstract methods for derived classes
+    // Virtual methods for derived classes to override
     protected abstract void UpdateMonster();
+    protected virtual void OnAttackStart() { }
+    protected virtual void OnAttackComplete() { }
+    protected virtual MonsterState GetStateAfterAttack() 
+    { 
+        return currentState == MonsterState.Chasing ? MonsterState.Chasing : MonsterState.Patrolling; 
+    }
     
     // Debug visualization
     protected virtual void OnDrawGizmos()

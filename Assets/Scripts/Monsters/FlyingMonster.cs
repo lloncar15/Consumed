@@ -268,6 +268,43 @@ public class FlyingMonster : MonsterBase
         }
     }
     
+    protected override void OnAttackStart()
+    {
+        base.OnAttackStart();
+        
+        // Flying monster dive attack or chomp
+        Debug.Log($"{name} starts aerial chomp attack!");
+        
+        // Spawn attack effect if assigned
+        if (attackEffect)
+        {
+            GameObject effect = Instantiate(attackEffect, transform.position, Quaternion.identity);
+            Destroy(effect, attackWindupTime + attackDuration);
+        }
+        
+        // Optional: Quick dash toward player during windup
+        if (gameManager && gameManager.IsPlayerValid())
+        {
+            Vector2 dashDirection = DirectionToPlayer;
+            targetVelocity = dashDirection * chaseSpeed * 0.5f; // Half speed dash
+        }
+    }
+    
+    protected override void OnAttackComplete()
+    {
+        base.OnAttackComplete();
+        Debug.Log($"{name} finished aerial attack");
+        
+        // Reset to normal movement
+        targetVelocity = Vector2.zero;
+    }
+    
+    protected override MonsterState GetStateAfterAttack()
+    {
+        // Flying monsters return to chasing if player still in detection range
+        return IsPlayerInRange(detectionRange) ? MonsterState.Chasing : MonsterState.Patrolling;
+    }
+    
     protected override void OnStateEnter(MonsterState state)
     {
         base.OnStateEnter(state);
@@ -279,8 +316,7 @@ public class FlyingMonster : MonsterBase
                 idleCenter = transform.position;
                 break;
             case MonsterState.Attacking:
-                // Stop movement during attack
-                targetVelocity = Vector2.zero;
+                // Stop normal movement during attack (handled in OnAttackStart)
                 break;
         }
     }

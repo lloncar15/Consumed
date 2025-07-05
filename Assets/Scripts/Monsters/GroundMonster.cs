@@ -229,6 +229,33 @@ public class GroundMonster : MonsterBase
         }
     }
     
+    protected override void OnAttackStart()
+    {
+        base.OnAttackStart();
+        
+        // Play chomp animation, sound effect, or visual feedback
+        Debug.Log($"{name} starts chomping!");
+        
+        // Spawn attack effect if assigned
+        if (attackEffect)
+        {
+            GameObject effect = Instantiate(attackEffect, transform.position, Quaternion.identity);
+            Destroy(effect, attackWindupTime + attackDuration);
+        }
+    }
+    
+    protected override void OnAttackComplete()
+    {
+        base.OnAttackComplete();
+        Debug.Log($"{name} finished chomping attack");
+    }
+    
+    protected override MonsterState GetStateAfterAttack()
+    {
+        // Ground monsters always return to patrolling after attack
+        return MonsterState.Patrolling;
+    }
+    
     protected override void OnStateExit(MonsterState state)
     {
         base.OnStateExit(state);
