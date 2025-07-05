@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class BubblePool : MonoBehaviour
@@ -10,22 +11,18 @@ public class BubblePool : MonoBehaviour
     [SerializeField] private bool autoExpand = true;
     
     // Pools - Dictionary keyed by BubbleTypeDefinition
-    private Dictionary<BubbleTypeDefinition, Queue<Bubble>> bubblePools = new Dictionary<BubbleTypeDefinition, Queue<Bubble>>();
+    private readonly Dictionary<BubbleTypeDefinition, Queue<Bubble>> _bubblePools = new Dictionary<BubbleTypeDefinition, Queue<Bubble>>();
     
     // Pool parent transforms for organization
-    private Transform poolParent;
+    private Transform _poolParent;
     
     public static BubblePool Instance { get; private set; }
     
     // Properties
     public int TotalPoolSize 
     { 
-        get 
-        { 
-            int total = 0;
-            foreach (var pool in bubblePools.Values)
-                total += pool.Count;
-            return total;
+        get {
+            return _bubblePools.Values.Sum(pool => pool.Count);
         } 
     }
     
@@ -46,38 +43,38 @@ public class BubblePool : MonoBehaviour
     private void InitializePool()
     {
         // Create parent transform for organization
-        poolParent = new GameObject("Bubble Pool").transform;
-        poolParent.SetParent(transform);
+        _poolParent = new GameObject("Bubble Pool").transform;
+        _poolParent.SetParent(transform);
         
         // Initialize pools for each bubble type
-        foreach (var bubbleType in bubbleTypes)
+        foreach (BubbleTypeDefinition bubbleType in bubbleTypes)
         {
             if (bubbleType != null && bubbleType.prefab != null)
             {
-                bubblePools[bubbleType] = new Queue<Bubble>();
+                _bubblePools[bubbleType] = new Queue<Bubble>();
                 CreateBubblesForType(bubbleType, initialPoolSizePerType);
             }
         }
         
-        Debug.Log($"BubblePool initialized with {TotalPoolSize} bubbles across {bubblePools.Count} types");
+        Debug.Log($"BubblePool initialized with {TotalPoolSize} bubbles across {_bubblePools.Count} types");
     }
     
     private void CreateBubblesForType(BubbleTypeDefinition bubbleType, int count)
     {
-        if (bubbleType?.prefab == null)
+        if (!bubbleType?.prefab)
         {
             Debug.LogWarning($"Bubble type {bubbleType?.name} has null prefab! Cannot create bubbles.");
             return;
         }
         
-        var pool = bubblePools[bubbleType];
+        var pool = _bubblePools[bubbleType];
         
         for (int i = 0; i < count; i++)
         {
-            GameObject bubbleObj = Instantiate(bubbleType.prefab, poolParent);
+            GameObject bubbleObj = Instantiate(bubbleType.prefab, _poolParent);
             Bubble bubble = bubbleObj.GetComponent<Bubble>();
             
-            if (bubble == null)
+            if (!bubble)
             {
                 Debug.LogError($"Prefab {bubbleType.prefab.name} doesn't have a Bubble component!");
                 Destroy(bubbleObj);
@@ -91,13 +88,12 @@ public class BubblePool : MonoBehaviour
     
     public Bubble GetBubble(BubbleTypeDefinition bubbleType)
     {
-        if (bubbleType == null || !bubblePools.ContainsKey(bubbleType))
+        if (!bubbleType || !_bubblePools.TryGetValue(bubbleType, out var targetPool))
         {
             Debug.LogWarning($"Bubble type {bubbleType?.name} not found in pools!");
             return null;
         }
-        
-        var targetPool = bubblePools[bubbleType];
+
         Bubble bubble = null;
         
         // Try to get from pool
@@ -122,18 +118,18 @@ public class BubblePool : MonoBehaviour
     {
         if (bubble == null || bubble.TypeDefinition == null) return;
         
-        var bubbleType = bubble.TypeDefinition;
-        if (!bubblePools.ContainsKey(bubbleType))
+        BubbleTypeDefinition bubbleType = bubble.TypeDefinition;
+        if (!_bubblePools.ContainsKey(bubbleType))
         {
             Debug.LogWarning($"Cannot return bubble - type {bubbleType.name} not found in pools!");
             return;
         }
         
         // Return to appropriate pool
-        var targetPool = bubblePools[bubbleType];
+        var targetPool = _bubblePools[bubbleType];
         
         // Reset bubble state
-        bubble.transform.SetParent(poolParent);
+        bubble.transform.SetParent(_poolParent);
         bubble.gameObject.SetActive(false);
         
         // Add back to pool
@@ -143,7 +139,7 @@ public class BubblePool : MonoBehaviour
     public void ClearPools()
     {
         // Clear all pools
-        foreach (var pool in bubblePools.Values)
+        foreach (var pool in _bubblePools.Values)
         {
             while (pool.Count > 0)
             {
@@ -152,19 +148,19 @@ public class BubblePool : MonoBehaviour
                     DestroyImmediate(bubble.gameObject);
             }
         }
-        bubblePools.Clear();
+        _bubblePools.Clear();
     }
     
     public int GetPoolCount(BubbleTypeDefinition bubbleType)
     {
-        return bubblePools.ContainsKey(bubbleType) ? bubblePools[bubbleType].Count : 0;
+        return _bubblePools.TryGetValue(bubbleType, out var pool) ? pool.Count : 0;
     }
     
     // Debug methods
     public void LogPoolStats()
     {
-        Debug.Log($"Pool Stats - Total: {TotalPoolSize} across {bubblePools.Count} types");
-        foreach (var kvp in bubblePools)
+        Debug.Log($"Pool Stats - Total: {TotalPoolSize} across {_bubblePools.Count} types");
+        foreach (var kvp in _bubblePools)
         {
             Debug.Log($"  {kvp.Key.name}: {kvp.Value.Count} bubbles");
         }

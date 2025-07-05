@@ -26,12 +26,12 @@ public class BubbleSystem : MonoBehaviour
     [SerializeField] private float maxDifficulty = 3f;
     
     // Active bubble management
-    private HashSet<Bubble> activeBubbles = new HashSet<Bubble>();
-    private float spawnTimer;
-    private float gameTime;
+    private readonly HashSet<Bubble> _activeBubbles = new HashSet<Bubble>();
+    private float _spawnTimer;
+    private float _gameTime;
     
     // References
-    private BubblePool bubblePool;
+    private BubblePool _bubblePool;
     
     // Events
     public static event Action<BubbleTypeDefinition, Vector2> OnBubbleBurst;
@@ -39,26 +39,24 @@ public class BubbleSystem : MonoBehaviour
     public static event Action<float> OnDifficultyChanged;
     
     // Properties
-    public int ActiveBubbleCount => activeBubbles.Count;
+    public int ActiveBubbleCount => _activeBubbles.Count;
     public BubbleMovementSettings MovementSettings => movementSettings;
     public float CurrentDifficulty => currentDifficulty;
     public BubbleTypeDefinition[] AvailableBubbleTypes => availableBubbleTypes;
     
-    private void Awake()
-    {
+    private void Awake() {
         // Create active bubble parent if not assigned
-        if (activeBubbleParent == null)
-        {
-            activeBubbleParent = new GameObject("Active Bubbles").transform;
-            activeBubbleParent.SetParent(transform);
-        }
+        if (activeBubbleParent != null) return;
+        
+        activeBubbleParent = new GameObject("Active Bubbles").transform;
+        activeBubbleParent.SetParent(transform);
     }
     
     private void Start()
     {
         // Get bubble pool reference
-        bubblePool = BubblePool.Instance;
-        if (bubblePool == null)
+        _bubblePool = BubblePool.Instance;
+        if (_bubblePool == null)
         {
             Debug.LogError("BubbleSystem: No BubblePool instance found!");
             enabled = false;
@@ -82,7 +80,7 @@ public class BubbleSystem : MonoBehaviour
     
     private void Update()
     {
-        gameTime += Time.deltaTime;
+        _gameTime += Time.deltaTime;
         
         if (scaleDifficultyOverTime)
         {
@@ -97,14 +95,14 @@ public class BubbleSystem : MonoBehaviour
     
     private void UpdateDifficulty()
     {
-        float newDifficulty = Mathf.Min(1f + (gameTime * difficultyIncreaseRate), maxDifficulty);
+        float newDifficulty = Mathf.Min(1f + (_gameTime * difficultyIncreaseRate), maxDifficulty);
         if (Mathf.Abs(newDifficulty - currentDifficulty) > 0.01f)
         {
             currentDifficulty = newDifficulty;
             OnDifficultyChanged?.Invoke(currentDifficulty);
             
             // Update movement settings difficulty
-            if (movementSettings != null)
+            if (movementSettings)
             {
                 movementSettings.ScaleDifficulty(currentDifficulty);
             }
@@ -113,22 +111,21 @@ public class BubbleSystem : MonoBehaviour
     
     private void HandleAutoSpawn()
     {
-        spawnTimer += Time.deltaTime;
+        _spawnTimer += Time.deltaTime;
+
+        if (!(_spawnTimer >= spawnInterval) || _activeBubbles.Count >= maxActiveBubbles) return;
         
-        if (spawnTimer >= spawnInterval && activeBubbles.Count < maxActiveBubbles)
-        {
-            SpawnWeightedBubble();
-            spawnTimer = 0f;
-        }
+        SpawnWeightedBubble();
+        _spawnTimer = 0f;
     }
     
     public Bubble SpawnBubble(BubbleTypeDefinition bubbleType, Vector2 position)
     {
-        if (bubblePool == null || activeBubbles.Count >= maxActiveBubbles || bubbleType == null)
+        if (!_bubblePool || _activeBubbles.Count >= maxActiveBubbles || bubbleType == null)
             return null;
         
-        Bubble bubble = bubblePool.GetBubble(bubbleType);
-        if (bubble == null)
+        Bubble bubble = _bubblePool.GetBubble(bubbleType);
+        if (!bubble)
             return null;
         
         // Move to active parent and initialize
@@ -136,7 +133,7 @@ public class BubbleSystem : MonoBehaviour
         bubble.Initialize(movementSettings, bubbleType, position);
         
         // Add to active set
-        activeBubbles.Add(bubble);
+        _activeBubbles.Add(bubble);
         
         OnBubbleSpawned?.Invoke(bubble);
         
@@ -148,7 +145,7 @@ public class BubbleSystem : MonoBehaviour
         Vector2 spawnPosition = GetRandomSpawnPosition();
         BubbleTypeDefinition bubbleType = GetWeightedBubbleType();
         
-        if (bubbleType != null)
+        if (bubbleType)
         {
             SpawnBubble(bubbleType, spawnPosition);
         }
@@ -157,7 +154,7 @@ public class BubbleSystem : MonoBehaviour
     private BubbleTypeDefinition GetWeightedBubbleType()
     {
         // Get available bubble types at current difficulty
-        var availableTypes = availableBubbleTypes.Where(bt => bt != null && bt.IsAvailableAtDifficulty(currentDifficulty)).ToList();
+        var availableTypes = availableBubbleTypes.Where(bt => bt && bt.IsAvailableAtDifficulty(currentDifficulty)).ToList();
         
         if (availableTypes.Count == 0)
         {
@@ -184,7 +181,7 @@ public class BubbleSystem : MonoBehaviour
         float currentWeight = 0f;
         
         // Find which bubble type to spawn
-        foreach (var bubbleType in availableTypes)
+        foreach (BubbleTypeDefinition bubbleType in availableTypes)
         {
             currentWeight += bubbleType.GetCurrentWeight(currentDifficulty);
             if (randomValue <= currentWeight)
@@ -194,7 +191,7 @@ public class BubbleSystem : MonoBehaviour
         }
         
         // Fallback (shouldn't happen)
-        return availableTypes[availableTypes.Count - 1];
+        return availableTypes[^1];
     }
     
     private Vector2 GetRandomSpawnPosition()
@@ -205,10 +202,10 @@ public class BubbleSystem : MonoBehaviour
     
     private void OnBubbleDestroyed(Bubble bubble)
     {
-        if (activeBubbles.Contains(bubble))
+        if (_activeBubbles.Contains(bubble))
         {
-            activeBubbles.Remove(bubble);
-            bubblePool.ReturnBubble(bubble);
+            _activeBubbles.Remove(bubble);
+            _bubblePool.ReturnBubble(bubble);
         }
     }
     
@@ -222,8 +219,8 @@ public class BubbleSystem : MonoBehaviour
     
     public void ReturnAllBubbles()
     {
-        var bubblesToReturn = new List<Bubble>(activeBubbles);
-        foreach (var bubble in bubblesToReturn)
+        var bubblesToReturn = new List<Bubble>(_activeBubbles);
+        foreach (Bubble bubble in bubblesToReturn)
         {
             bubble.DestroyBubble();
         }
@@ -231,7 +228,7 @@ public class BubbleSystem : MonoBehaviour
     
     public void AddExternalForceToAllBubbles(Vector2 force)
     {
-        foreach (var bubble in activeBubbles)
+        foreach (Bubble bubble in _activeBubbles)
         {
             bubble.AddExternalForce(force);
         }
@@ -239,7 +236,7 @@ public class BubbleSystem : MonoBehaviour
     
     public void AddExternalForceToNearbyBubbles(Vector2 position, float radius, Vector2 force)
     {
-        foreach (var bubble in activeBubbles)
+        foreach (Bubble bubble in _activeBubbles)
         {
             float distance = Vector2.Distance(bubble.Position, position);
             if (distance <= radius)
@@ -266,7 +263,7 @@ public class BubbleSystem : MonoBehaviour
         currentDifficulty = Mathf.Clamp(difficulty, 0.1f, maxDifficulty);
         OnDifficultyChanged?.Invoke(currentDifficulty);
         
-        if (movementSettings != null)
+        if (movementSettings)
         {
             movementSettings.ScaleDifficulty(currentDifficulty);
         }
@@ -275,7 +272,7 @@ public class BubbleSystem : MonoBehaviour
     // Runtime weight modification
     public void SetBubbleTypeWeight(BubbleTypeDefinition bubbleType, float weight)
     {
-        if (bubbleType != null)
+        if (bubbleType)
         {
             bubbleType.SetWeightMultiplier(weight);
         }
@@ -283,7 +280,7 @@ public class BubbleSystem : MonoBehaviour
     
     public void SetBubbleTypeEnabled(BubbleTypeDefinition bubbleType, bool enabled)
     {
-        if (bubbleType != null)
+        if (bubbleType)
         {
             bubbleType.SetEnabled(enabled);
         }
@@ -291,7 +288,7 @@ public class BubbleSystem : MonoBehaviour
     
     public void SetBubbleTypeDifficultyRange(BubbleTypeDefinition bubbleType, float minDifficulty, float maxDifficulty)
     {
-        if (bubbleType != null)
+        if (bubbleType)
         {
             bubbleType.SetDifficultyRange(minDifficulty, maxDifficulty);
         }
@@ -315,13 +312,13 @@ public class BubbleSystem : MonoBehaviour
         Debug.Log($"BubbleSystem Stats - Active: {ActiveBubbleCount}, Max: {maxActiveBubbles}, Difficulty: {currentDifficulty:F2}");
         
         var availableTypes = availableBubbleTypes.Where(bt => bt != null && bt.IsAvailableAtDifficulty(currentDifficulty));
-        foreach (var bubbleType in availableTypes)
+        foreach (BubbleTypeDefinition bubbleType in availableTypes)
         {
             float currentWeight = bubbleType.GetCurrentWeight(currentDifficulty);
             Debug.Log($"  {bubbleType.displayName}: {currentWeight:F1} (base: {bubbleType.baseWeight:F1})");
         }
         
-        bubblePool?.LogPoolStats();
+        _bubblePool?.LogPoolStats();
     }
     
     private void OnDrawGizmos()

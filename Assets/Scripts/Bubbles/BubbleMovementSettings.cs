@@ -34,7 +34,6 @@ public class BubbleMovementSettings : ScriptableObject
     [Range(1f, 30f)] public float maxLifetime = 15f;
     
     [Header("Collision")]
-    [Range(0.1f, 2f)] public float collisionRadius = 0.5f;
     [Range(0f, 5f)] public float burstForce = 2f;
     
     [Header("Runtime Multipliers")]

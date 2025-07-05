@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-[RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(EdgeCollider2D))]
 public class Bubble : MonoBehaviour
 {
     [Header("Configuration")]
@@ -10,20 +10,20 @@ public class Bubble : MonoBehaviour
     [SerializeField] private GameObject burstEffect;
     
     // Movement state
-    private Vector2 velocity;
-    private Vector2 externalForce;
-    private float lifetime;
-    private float maxLifetime;
-    private float timeAlive;
+    private Vector2 _velocity;
+    private Vector2 _externalForce;
+    private float _lifetime;
+    private float _maxLifetime;
+    private float _timeAlive;
     
     // Noise sampling
-    private float perlinSeedX;
-    private float perlinSeedY;
-    private float bobSeed;
+    private float _perlinSeedX;
+    private float _perlinSeedY;
+    private float _bobSeed;
     
     // Components
-    private CircleCollider2D bubbleCollider;
-    private Transform bubbleTransform;
+    private EdgeCollider2D _bubbleCollider;
+    private Transform _bubbleTransform;
     
     // Events
     public static event Action<Bubble, Vector2> OnBubbleBurst;
@@ -33,16 +33,16 @@ public class Bubble : MonoBehaviour
     public BubbleTypeDefinition TypeDefinition => bubbleTypeDefinition;
     public BubbleCategory Category => bubbleTypeDefinition?.category ?? BubbleCategory.Bad;
     public BubbleSubtype Subtype => bubbleTypeDefinition?.subtype ?? BubbleSubtype.GroundMonster;
-    public Vector2 Position => bubbleTransform.position;
+    public Vector2 Position => _bubbleTransform.position;
     public bool IsActive { get; private set; }
     
     private void Awake()
     {
-        bubbleCollider = GetComponent<CircleCollider2D>();
-        bubbleTransform = transform;
+        _bubbleCollider = GetComponent<EdgeCollider2D>();
+        _bubbleTransform = transform;
         
         // Configure collider as trigger
-        bubbleCollider.isTrigger = true;
+        _bubbleCollider.isTrigger = true;
     }
     
     private void Update()
@@ -58,21 +58,18 @@ public class Bubble : MonoBehaviour
     {
         settings = movementSettings;
         bubbleTypeDefinition = typeDefinition;
-        bubbleTransform.position = startPosition;
+        _bubbleTransform.position = startPosition;
         
         // Initialize movement state
-        velocity = Vector2.zero;
-        externalForce = Vector2.zero;
-        timeAlive = 0f;
-        maxLifetime = UnityEngine.Random.Range(settings.minLifetime, settings.maxLifetime);
+        _velocity = Vector2.zero;
+        _externalForce = Vector2.zero;
+        _timeAlive = 0f;
+        _maxLifetime = UnityEngine.Random.Range(settings.minLifetime, settings.maxLifetime);
         
         // Initialize noise seeds for unique movement
-        perlinSeedX = UnityEngine.Random.Range(0f, 1000f);
-        perlinSeedY = UnityEngine.Random.Range(0f, 1000f);
-        bobSeed = UnityEngine.Random.Range(0f, 1000f);
-        
-        // Configure collider
-        bubbleCollider.radius = settings.collisionRadius;
+        _perlinSeedX = UnityEngine.Random.Range(0f, 1000f);
+        _perlinSeedY = UnityEngine.Random.Range(0f, 1000f);
+        _bobSeed = UnityEngine.Random.Range(0f, 1000f);
         
         IsActive = true;
         gameObject.SetActive(true);
@@ -83,37 +80,37 @@ public class Bubble : MonoBehaviour
         float deltaTime = Time.deltaTime;
         
         // Base upward movement
-        velocity.y = settings.CurrentUpwardSpeed;
+        _velocity.y = settings.CurrentUpwardSpeed;
         
         // Perlin noise for horizontal drift
         float perlinTime = (Time.time + settings.perlinTimeOffset) * settings.perlinFrequency;
-        float perlinX = Mathf.PerlinNoise(perlinSeedX + perlinTime, 0f) - 0.5f;
-        float perlinY = Mathf.PerlinNoise(perlinSeedY + perlinTime, 0f) - 0.5f;
+        float perlinX = Mathf.PerlinNoise(_perlinSeedX + perlinTime, 0f) - 0.5f;
+        float perlinY = Mathf.PerlinNoise(_perlinSeedY + perlinTime, 0f) - 0.5f;
         
         Vector2 perlinDrift = new Vector2(perlinX, perlinY) * settings.CurrentPerlinAmplitude;
-        velocity += perlinDrift;
+        _velocity += perlinDrift;
         
         // Sine wave bobbing
-        float bobTime = (Time.time + settings.bobTimeOffset + bobSeed) * settings.bobFrequency;
+        float bobTime = (Time.time + settings.bobTimeOffset + _bobSeed) * settings.bobFrequency;
         float bobX = Mathf.Sin(bobTime) * settings.CurrentBobAmplitude;
         float bobY = Mathf.Sin(bobTime * 0.7f) * settings.CurrentBobAmplitude * 0.5f;
         
         Vector2 bobMovement = new Vector2(bobX, bobY);
-        velocity += bobMovement;
+        _velocity += bobMovement;
         
         // Apply external forces
-        velocity += externalForce * settings.externalForceSensitivity;
+        _velocity += _externalForce * settings.externalForceSensitivity;
         
         // Update position
-        bubbleTransform.position += (Vector3)velocity * deltaTime;
+        _bubbleTransform.position += (Vector3)_velocity * deltaTime;
         
         // Decay external forces
-        externalForce = Vector2.MoveTowards(externalForce, Vector2.zero, settings.forceDecayRate * deltaTime);
+        _externalForce = Vector2.MoveTowards(_externalForce, Vector2.zero, settings.forceDecayRate * deltaTime);
     }
     
     private void UpdateBoundaries()
     {
-        Vector2 position = bubbleTransform.position;
+        Vector2 position = _bubbleTransform.position;
         Vector2 levelBounds = settings.GetLevelBounds();
         Vector2 safeBounds = settings.GetSafeBounds();
         
@@ -156,9 +153,9 @@ public class Bubble : MonoBehaviour
     
     private void UpdateLifetime()
     {
-        timeAlive += Time.deltaTime;
+        _timeAlive += Time.deltaTime;
         
-        if (timeAlive >= maxLifetime)
+        if (_timeAlive >= _maxLifetime)
         {
             DestroyBubble();
         }
@@ -166,7 +163,7 @@ public class Bubble : MonoBehaviour
     
     public void AddExternalForce(Vector2 force)
     {
-        externalForce += force;
+        _externalForce += force;
     }
     
     public void BurstBubble()
@@ -176,17 +173,18 @@ public class Bubble : MonoBehaviour
         // Spawn burst effect
         if (burstEffect != null)
         {
-            GameObject effect = Instantiate(burstEffect, bubbleTransform.position, Quaternion.identity);
+            GameObject effect = Instantiate(burstEffect, _bubbleTransform.position, Quaternion.identity);
             Destroy(effect, 2f);
         }
         
         // Notify listeners
-        OnBubbleBurst?.Invoke(this, bubbleTransform.position);
+        OnBubbleBurst?.Invoke(this, _bubbleTransform.position);
         
         // Deactivate bubble
         DeactivateBubble();
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     public void DestroyBubble()
     {
         if (!IsActive) return;
@@ -208,6 +206,7 @@ public class Bubble : MonoBehaviour
         // Check if player collided with bubble
         if (other.CompareTag("Player"))
         {
+            Debug.Log("Player collided with bubble: " + bubbleTypeDefinition.displayName);
             BurstBubble();
         }
     }
@@ -217,21 +216,15 @@ public class Bubble : MonoBehaviour
     {
         if (!IsActive) return;
         
-        // Draw collision radius
-        Gizmos.color = Category == BubbleCategory.Good ? Color.green : Color.red;
-        if (bubbleTypeDefinition != null)
-            Gizmos.color = bubbleTypeDefinition.bubbleColor;
-        Gizmos.DrawWireSphere(transform.position, settings?.collisionRadius ?? 0.5f);
-        
         // Draw velocity direction
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, transform.position + (Vector3)velocity);
+        Gizmos.DrawLine(transform.position, transform.position + (Vector3)_velocity);
         
         // Draw external force
-        if (externalForce.magnitude > 0.1f)
+        if (_externalForce.magnitude > 0.1f)
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(transform.position, transform.position + (Vector3)externalForce);
+            Gizmos.DrawLine(transform.position, transform.position + (Vector3)_externalForce);
         }
     }
 }

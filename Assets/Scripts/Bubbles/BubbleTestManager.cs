@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Linq;
+using UnityEditor;
 
 public class BubbleTestManager : MonoBehaviour
 {
@@ -32,19 +33,17 @@ public class BubbleTestManager : MonoBehaviour
     {
         // Auto-find references if not assigned
         if (bubbleSystem == null)
-            bubbleSystem = FindObjectOfType<BubbleSystem>();
+            bubbleSystem = (BubbleSystem)FindFirstObjectByType(typeof(BubbleSystem));
         if (bubblePool == null)
-            bubblePool = FindObjectOfType<BubblePool>();
+            bubblePool = (BubblePool)FindFirstObjectByType(typeof(BubblePool));
     }
     
-    private void Update()
-    {
+    private void Update() {
         // Apply runtime parameter overrides
-        if (bubbleSystem != null)
-        {
-            bubbleSystem.SetDifficulty(difficultyOverride);
-            bubbleSystem.SetSpawnParameters(spawnIntervalOverride, maxBubblesOverride);
-        }
+        if (!bubbleSystem) return;
+        
+        bubbleSystem.SetDifficulty(difficultyOverride);
+        bubbleSystem.SetSpawnParameters(spawnIntervalOverride, maxBubblesOverride);
     }
     
     // Inspector button methods
@@ -66,22 +65,23 @@ public class BubbleTestManager : MonoBehaviour
         }
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Spawn Random Weighted Bubble")]
-    public void SpawnRandomWeightedBubble()
-    {
-        if (bubbleSystem != null)
-        {
-            bubbleSystem.SpawnWeightedBubble();
-            Debug.Log("Spawned random weighted bubble");
-        }
+    public void SpawnRandomWeightedBubble() {
+        if (!bubbleSystem) return;
+        
+        bubbleSystem.SpawnWeightedBubble();
+        Debug.Log("Spawned random weighted bubble");
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Spawn Good Bubble")]
     public void SpawnGoodBubble()
     {
         SpawnBubbleByCategory(BubbleCategory.Good);
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Spawn Bad Bubble")]
     public void SpawnBadBubble()
     {
@@ -106,70 +106,62 @@ public class BubbleTestManager : MonoBehaviour
         SpawnBubbleBySubtype(BubbleSubtype.ShootingMonster);
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Clear All Bubbles")]
-    public void ClearAllBubbles()
-    {
-        if (bubbleSystem != null)
-        {
-            bubbleSystem.ReturnAllBubbles();
-            Debug.Log("Cleared all bubbles");
-        }
+    public void ClearAllBubbles() {
+        if (!bubbleSystem) return;
+        
+        bubbleSystem.ReturnAllBubbles();
+        Debug.Log("Cleared all bubbles");
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Apply Global Force")]
-    public void ApplyGlobalForce()
-    {
-        if (bubbleSystem != null && globalForce != Vector2.zero)
-        {
-            bubbleSystem.AddExternalForceToAllBubbles(globalForce);
-            Debug.Log($"Applied global force: {globalForce}");
-        }
+    public void ApplyGlobalForce() {
+        if (!bubbleSystem || globalForce == Vector2.zero) return;
+        
+        bubbleSystem.AddExternalForceToAllBubbles(globalForce);
+        Debug.Log($"Applied global force: {globalForce}");
     }
     
     [ContextMenu("Apply Local Force")]
-    public void ApplyLocalForce()
-    {
-        if (bubbleSystem != null && localForceVector != Vector2.zero)
-        {
-            bubbleSystem.AddExternalForceToNearbyBubbles(localForcePosition, localForceRadius, localForceVector);
-            Debug.Log($"Applied local force: {localForceVector} at {localForcePosition} with radius {localForceRadius}");
-        }
+    public void ApplyLocalForce() {
+        if (bubbleSystem == null || localForceVector == Vector2.zero) return;
+        
+        bubbleSystem.AddExternalForceToNearbyBubbles(localForcePosition, localForceRadius, localForceVector);
+        Debug.Log($"Applied local force: {localForceVector} at {localForcePosition} with radius {localForceRadius}");
     }
     
+    // ReSharper disable Unity.PerformanceAnalysis
     [ContextMenu("Log System Stats")]
     public void LogSystemStats()
     {
-        if (bubbleSystem != null)
+        if (bubbleSystem)
             bubbleSystem.LogSystemStats();
-        if (bubblePool != null)
+        if (bubblePool)
             bubblePool.LogPoolStats();
     }
     
     // Weight manipulation methods
-    public void SetBubbleTypeWeight(BubbleSubtype subtype, float weight)
-    {
-        if (bubbleSystem != null)
-        {
-            var bubbleType = bubbleSystem.GetBubbleType(subtype);
-            if (bubbleType != null)
-            {
-                bubbleType.SetWeightMultiplier(weight);
-                Debug.Log($"Set {subtype} weight multiplier to {weight}");
-            }
-        }
+    public void SetBubbleTypeWeight(BubbleSubtype subtype, float weight) {
+        if (bubbleSystem == null) return;
+        
+        BubbleTypeDefinition bubbleType = bubbleSystem.GetBubbleType(subtype);
+        
+        if (bubbleType == null) return;
+        
+        bubbleType.SetWeightMultiplier(weight);
+        Debug.Log($"Set {subtype} weight multiplier to {weight}");
     }
     
-    public void EnableBubbleType(BubbleSubtype subtype, bool enabled)
-    {
-        if (bubbleSystem != null)
-        {
-            var bubbleType = bubbleSystem.GetBubbleType(subtype);
-            if (bubbleType != null)
-            {
-                bubbleType.SetEnabled(enabled);
-                Debug.Log($"Set {subtype} enabled to {enabled}");
-            }
-        }
+    public void EnableBubbleType(BubbleSubtype subtype, bool enabled) {
+        if (bubbleSystem == null) return;
+        
+        BubbleTypeDefinition bubbleType = bubbleSystem.GetBubbleType(subtype);
+        if (bubbleType == null) return;
+        
+        bubbleType.SetEnabled(enabled);
+        Debug.Log($"Set {subtype} enabled to {enabled}");
     }
     
     // Helper methods
@@ -180,7 +172,7 @@ public class BubbleTestManager : MonoBehaviour
         var bubbleTypes = bubbleSystem.GetBubbleTypesByCategory(category);
         if (bubbleTypes.Length > 0)
         {
-            var randomType = bubbleTypes[Random.Range(0, bubbleTypes.Length)];
+            BubbleTypeDefinition randomType = bubbleTypes[Random.Range(0, bubbleTypes.Length)];
             bubbleSystem.SpawnBubble(randomType, spawnPosition);
             Debug.Log($"Spawned {category} bubble: {randomType.displayName}");
         }
@@ -194,7 +186,7 @@ public class BubbleTestManager : MonoBehaviour
     {
         if (bubbleSystem == null) return;
         
-        var bubbleType = bubbleSystem.GetBubbleType(subtype);
+        BubbleTypeDefinition bubbleType = bubbleSystem.GetBubbleType(subtype);
         if (bubbleType != null)
         {
             bubbleSystem.SpawnBubble(bubbleType, spawnPosition);
@@ -216,27 +208,27 @@ public class BubbleTestManager : MonoBehaviour
         
         GUILayout.Label("Bubble Test Manager", EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).label);
         
-        if (showStats && bubbleSystem != null)
+        if (showStats && bubbleSystem)
         {
             GUILayout.Space(10);
             GUILayout.Label("Stats:", EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).label);
             GUILayout.Label($"Active Bubbles: {bubbleSystem.ActiveBubbleCount}");
             GUILayout.Label($"Difficulty: {bubbleSystem.CurrentDifficulty:F2}");
             
-            if (bubblePool != null)
+            if (bubblePool)
             {
                 GUILayout.Label($"Pool Size: {bubblePool.TotalPoolSize}");
             }
         }
         
-        if (showWeights && bubbleSystem != null)
+        if (showWeights && bubbleSystem)
         {
             GUILayout.Space(10);
             GUILayout.Label("Bubble Weights:", EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).label);
             
             foreach (var bubbleType in bubbleSystem.AvailableBubbleTypes)
             {
-                if (bubbleType != null && bubbleType.IsAvailableAtDifficulty(bubbleSystem.CurrentDifficulty))
+                if (bubbleType && bubbleType.IsAvailableAtDifficulty(bubbleSystem.CurrentDifficulty))
                 {
                     float weight = bubbleType.GetCurrentWeight(bubbleSystem.CurrentDifficulty);
                     GUILayout.Label($"{bubbleType.displayName}: {weight:F1}");

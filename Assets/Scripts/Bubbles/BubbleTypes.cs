@@ -9,7 +9,6 @@ public enum BubbleCategory
 public enum BubbleSubtype
 {
     // Good bubble subtypes
-    HealthPotion,
     SpeedBoost,
     JumpBoost,
     Shield,
