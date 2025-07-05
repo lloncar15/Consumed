@@ -60,18 +60,18 @@ public abstract class MonsterBase : MonoBehaviour
     
     // State Management
     protected MonsterState currentState;
-    protected float stateTimer;
-    protected float lifetime;
-    protected float lastAttackTime;
-    protected bool hasHitPlayerThisAttack;
+    protected float StateTimer;
+    protected float Lifetime;
+    protected float LastAttackTime;
+    protected bool HasHitPlayerThisAttack;
     
     // Game Manager reference
-    protected GameManager gameManager;
+    protected GameManager GameManager;
     
     // Components
-    protected Rigidbody2D monsterRigidbody;
-    protected Collider2D monsterCollider;
-    protected SpriteRenderer spriteRenderer;
+    protected Rigidbody2D MonsterRigidbody;
+    protected Collider2D MonsterCollider;
+    protected SpriteRenderer SpriteRenderer;
     
     // Events
     public static event Action<MonsterBase> OnMonsterSpawned;
@@ -83,19 +83,19 @@ public abstract class MonsterBase : MonoBehaviour
     public MonsterState CurrentState => currentState;
     public MonsterType Type => monsterType;
     public bool IsAlive => currentState != MonsterState.Dying && currentState != MonsterState.Dead;
-    public bool CanAttack => Time.time >= lastAttackTime + attackCooldown;
-    public float DistanceToPlayer => gameManager ? gameManager.GetDistanceToPlayer(transform.position) : float.MaxValue;
-    public Vector2 DirectionToPlayer => gameManager ? gameManager.GetDirectionToPlayer(transform.position) : Vector2.zero;
+    public bool CanAttack => Time.time >= LastAttackTime + attackCooldown;
+    public float DistanceToPlayer => GameManager ? GameManager.GetDistanceToPlayer(transform.position) : float.MaxValue;
+    public Vector2 DirectionToPlayer => GameManager ? GameManager.GetDirectionToPlayer(transform.position) : Vector2.zero;
     
     protected virtual void Awake()
     {
-        monsterRigidbody = GetComponent<Rigidbody2D>();
-        monsterCollider = GetComponent<Collider2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        MonsterRigidbody = GetComponent<Rigidbody2D>();
+        MonsterCollider = GetComponent<Collider2D>();
+        SpriteRenderer = GetComponent<SpriteRenderer>();
         
         // Get game manager reference
-        gameManager = GameManager.Instance;
-        if (gameManager == null)
+        GameManager = GameManager.Instance;
+        if (GameManager == null)
         {
             Debug.LogError($"MonsterBase: No GameManager instance found! Monster {name} won't function properly.");
         }
@@ -108,7 +108,7 @@ public abstract class MonsterBase : MonoBehaviour
     
     protected virtual void Update()
     {
-        if (!IsAlive || (gameManager && gameManager.IsGameOver)) return;
+        if (!IsAlive || (GameManager && GameManager.IsGameOver)) return;
         
         UpdateLifetime();
         UpdateStateMachine();
@@ -118,18 +118,18 @@ public abstract class MonsterBase : MonoBehaviour
     public virtual void Initialize()
     {
         currentState = MonsterState.Spawning;
-        stateTimer = 0f;
-        lifetime = 0f;
-        lastAttackTime = -attackCooldown;
+        StateTimer = 0f;
+        Lifetime = 0f;
+        LastAttackTime = -attackCooldown;
         
         OnMonsterSpawned?.Invoke(this);
     }
     
     protected virtual void UpdateLifetime()
     {
-        lifetime += Time.deltaTime;
+        Lifetime += Time.deltaTime;
         
-        if (lifetime >= maxLifetime)
+        if (Lifetime >= maxLifetime)
         {
             Die();
         }
@@ -137,7 +137,7 @@ public abstract class MonsterBase : MonoBehaviour
     
     protected virtual void UpdateStateMachine()
     {
-        stateTimer += Time.deltaTime;
+        StateTimer += Time.deltaTime;
         
         switch (currentState)
         {
@@ -164,7 +164,7 @@ public abstract class MonsterBase : MonoBehaviour
     
     protected virtual void HandleSpawningState()
     {
-        if (stateTimer >= spawnDuration)
+        if (StateTimer >= spawnDuration)
         {
             TransitionToState(MonsterState.Idle);
         }
@@ -176,7 +176,7 @@ public abstract class MonsterBase : MonoBehaviour
         {
             TransitionToState(MonsterState.Chasing);
         }
-        else if (stateTimer >= idleWaitTime)
+        else if (StateTimer >= idleWaitTime)
         {
             TransitionToState(MonsterState.Patrolling);
         }
@@ -208,18 +208,18 @@ public abstract class MonsterBase : MonoBehaviour
     {
         float totalAttackTime = attackWindupTime + attackDuration;
         
-        if (stateTimer >= totalAttackTime)
+        if (StateTimer >= totalAttackTime)
         {
-            lastAttackTime = Time.time;
+            LastAttackTime = Time.time;
             OnAttackComplete();
             TransitionToState(GetStateAfterAttack());
         }
-        else if (stateTimer >= attackWindupTime && stateTimer < totalAttackTime)
+        else if (StateTimer >= attackWindupTime && StateTimer < totalAttackTime)
         {
             // Attack is active - check for hit (only once per attack)
-            if (!hasHitPlayerThisAttack && IsPlayerInRange(attackRange))
+            if (!HasHitPlayerThisAttack && IsPlayerInRange(attackRange))
             {
-                hasHitPlayerThisAttack = true;
+                HasHitPlayerThisAttack = true;
                 HitPlayer();
             }
         }
@@ -227,7 +227,7 @@ public abstract class MonsterBase : MonoBehaviour
     
     protected virtual void HandleDyingState()
     {
-        if (stateTimer >= deathAnimationDuration)
+        if (StateTimer >= deathAnimationDuration)
         {
             currentState = MonsterState.Dead;
             gameObject.SetActive(false);
@@ -238,7 +238,7 @@ public abstract class MonsterBase : MonoBehaviour
     {
         OnStateExit(currentState);
         currentState = newState;
-        stateTimer = 0f;
+        StateTimer = 0f;
         OnStateEnter(newState);
     }
     
@@ -247,7 +247,7 @@ public abstract class MonsterBase : MonoBehaviour
         switch (state)
         {
             case MonsterState.Attacking:
-                hasHitPlayerThisAttack = false;
+                HasHitPlayerThisAttack = false;
                 OnAttackStart();
                 OnMonsterAttackStart?.Invoke(this);
                 break;
@@ -261,20 +261,20 @@ public abstract class MonsterBase : MonoBehaviour
     
     protected bool IsPlayerInRange(float range)
     {
-        return gameManager && gameManager.IsPlayerValid() && DistanceToPlayer <= range;
+        return GameManager && GameManager.IsPlayerValid() && DistanceToPlayer <= range;
     }
     
     protected Vector2 GetPlayerPosition()
     {
-        return gameManager ? gameManager.GetPlayerPosition() : Vector2.zero;
+        return GameManager ? GameManager.GetPlayerPosition() : Vector2.zero;
     }
     
     protected virtual void HitPlayer()
     {
-        if (gameManager && gameManager.IsPlayerValid())
+        if (GameManager && GameManager.IsPlayerValid())
         {
             OnMonsterAttackHit?.Invoke(this);
-            gameManager.EndGame(); // Trigger game over
+            GameManager.EndGame(); // Trigger game over
             Debug.Log($"{name} hit the player! Game Over!");
         }
     }
@@ -319,7 +319,7 @@ public abstract class MonsterBase : MonoBehaviour
         // Lose target range (when chasing)
         if (Application.isPlaying && currentState == MonsterState.Chasing)
         {
-            Gizmos.color = Color.orange;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, detectionRange * loseTargetRangeMultiplier);
         }
         
@@ -331,7 +331,7 @@ public abstract class MonsterBase : MonoBehaviour
         }
         
         // Direction to player
-        if (Application.isPlaying && gameManager && gameManager.IsPlayerValid())
+        if (Application.isPlaying && GameManager && GameManager.IsPlayerValid())
         {
             Gizmos.color = Color.cyan;
             Vector2 playerPos = GetPlayerPosition();
@@ -346,7 +346,7 @@ public abstract class MonsterBase : MonoBehaviour
             MonsterState.Spawning => Color.white,
             MonsterState.Idle => Color.blue,
             MonsterState.Patrolling => Color.green,
-            MonsterState.Chasing => Color.orange,
+            MonsterState.Chasing => Color.yellow,
             MonsterState.Attacking => Color.red,
             MonsterState.Dying => Color.gray,
             _ => Color.black

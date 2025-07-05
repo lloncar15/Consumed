@@ -13,21 +13,21 @@ public class MonsterPool : MonoBehaviour
     [SerializeField] private bool autoExpand = true;
     
     // Pools
-    private Queue<MonsterBase> groundMonsterPool = new Queue<MonsterBase>();
-    private Queue<MonsterBase> flyingMonsterPool = new Queue<MonsterBase>();
-    private HashSet<MonsterBase> activeMonsters = new HashSet<MonsterBase>();
+    private Queue<MonsterBase> _groundMonsterPool = new Queue<MonsterBase>();
+    private Queue<MonsterBase> _flyingMonsterPool = new Queue<MonsterBase>();
+    private HashSet<MonsterBase> _activeMonsters = new HashSet<MonsterBase>();
     
     // Pool parent transforms
-    private Transform groundPoolParent;
-    private Transform flyingPoolParent;
-    private Transform activeMonsterParent;
+    private Transform _groundPoolParent;
+    private Transform _flyingPoolParent;
+    private Transform _activeMonsterParent;
     
     public static MonsterPool Instance { get; private set; }
     
     // Properties
-    public int ActiveMonsterCount => activeMonsters.Count;
-    public int GroundPoolCount => groundMonsterPool.Count;
-    public int FlyingPoolCount => flyingMonsterPool.Count;
+    public int ActiveMonsterCount => _activeMonsters.Count;
+    public int GroundPoolCount => _groundMonsterPool.Count;
+    public int FlyingPoolCount => _flyingMonsterPool.Count;
     public int TotalPoolSize => GroundPoolCount + FlyingPoolCount;
     
     private void Awake()
@@ -57,17 +57,17 @@ public class MonsterPool : MonoBehaviour
     private void InitializePool()
     {
         // Create parent transforms
-        groundPoolParent = new GameObject("Ground Monster Pool").transform;
-        flyingPoolParent = new GameObject("Flying Monster Pool").transform;
-        activeMonsterParent = new GameObject("Active Monsters").transform;
+        _groundPoolParent = new GameObject("Ground Monster Pool").transform;
+        _flyingPoolParent = new GameObject("Flying Monster Pool").transform;
+        _activeMonsterParent = new GameObject("Active Monsters").transform;
         
-        groundPoolParent.SetParent(transform);
-        flyingPoolParent.SetParent(transform);
-        activeMonsterParent.SetParent(transform);
+        _groundPoolParent.SetParent(transform);
+        _flyingPoolParent.SetParent(transform);
+        _activeMonsterParent.SetParent(transform);
         
         // Pre-instantiate monsters
-        CreateMonsters(groundMonsterPrefab, groundMonsterPool, groundPoolParent, initialPoolSizePerType);
-        CreateMonsters(flyingMonsterPrefab, flyingMonsterPool, flyingPoolParent, initialPoolSizePerType);
+        CreateMonsters(groundMonsterPrefab, _groundMonsterPool, _groundPoolParent, initialPoolSizePerType);
+        CreateMonsters(flyingMonsterPrefab, _flyingMonsterPool, _flyingPoolParent, initialPoolSizePerType);
         
         Debug.Log($"MonsterPool initialized with {TotalPoolSize} monsters");
     }
@@ -99,9 +99,9 @@ public class MonsterPool : MonoBehaviour
     
     public MonsterBase GetMonster(MonsterType type)
     {
-        Queue<MonsterBase> targetPool = type == MonsterType.Ground ? groundMonsterPool : flyingMonsterPool;
+        Queue<MonsterBase> targetPool = type == MonsterType.Ground ? _groundMonsterPool : _flyingMonsterPool;
         GameObject targetPrefab = type == MonsterType.Ground ? groundMonsterPrefab : flyingMonsterPrefab;
-        Transform poolParent = type == MonsterType.Ground ? groundPoolParent : flyingPoolParent;
+        Transform poolParent = type == MonsterType.Ground ? _groundPoolParent : _flyingPoolParent;
         
         MonsterBase monster = null;
         
@@ -111,7 +111,7 @@ public class MonsterPool : MonoBehaviour
             monster = targetPool.Dequeue();
         }
         // Create new if pool is empty and auto-expand is enabled
-        else if (autoExpand && activeMonsters.Count < maxPoolSize)
+        else if (autoExpand && _activeMonsters.Count < maxPoolSize)
         {
             if (targetPrefab != null)
             {
@@ -135,9 +135,9 @@ public class MonsterPool : MonoBehaviour
         if (monster != null)
         {
             // Move to active parent and activate
-            monster.transform.SetParent(activeMonsterParent);
+            monster.transform.SetParent(_activeMonsterParent);
             monster.gameObject.SetActive(true);
-            activeMonsters.Add(monster);
+            _activeMonsters.Add(monster);
         }
         
         return monster;
@@ -145,15 +145,15 @@ public class MonsterPool : MonoBehaviour
     
     private void ReturnMonsterToPool(MonsterBase monster)
     {
-        if (monster == null || !activeMonsters.Contains(monster))
+        if (monster == null || !_activeMonsters.Contains(monster))
             return;
         
         // Remove from active set
-        activeMonsters.Remove(monster);
+        _activeMonsters.Remove(monster);
         
         // Return to appropriate pool
-        Queue<MonsterBase> targetPool = monster.Type == MonsterType.Ground ? groundMonsterPool : flyingMonsterPool;
-        Transform poolParent = monster.Type == MonsterType.Ground ? groundPoolParent : flyingPoolParent;
+        Queue<MonsterBase> targetPool = monster.Type == MonsterType.Ground ? _groundMonsterPool : _flyingMonsterPool;
+        Transform poolParent = monster.Type == MonsterType.Ground ? _groundPoolParent : _flyingPoolParent;
         
         // Reset monster state
         monster.transform.SetParent(poolParent);
@@ -165,7 +165,7 @@ public class MonsterPool : MonoBehaviour
     
     public void ReturnAllMonsters()
     {
-        var monstersToReturn = new List<MonsterBase>(activeMonsters);
+        var monstersToReturn = new List<MonsterBase>(_activeMonsters);
         foreach (var monster in monstersToReturn)
         {
             monster.Die();
@@ -177,21 +177,21 @@ public class MonsterPool : MonoBehaviour
         ReturnAllMonsters();
         
         // Clear pools
-        while (groundMonsterPool.Count > 0)
+        while (_groundMonsterPool.Count > 0)
         {
-            var monster = groundMonsterPool.Dequeue();
+            var monster = _groundMonsterPool.Dequeue();
             if (monster != null)
                 DestroyImmediate(monster.gameObject);
         }
         
-        while (flyingMonsterPool.Count > 0)
+        while (_flyingMonsterPool.Count > 0)
         {
-            var monster = flyingMonsterPool.Dequeue();
+            var monster = _flyingMonsterPool.Dequeue();
             if (monster != null)
                 DestroyImmediate(monster.gameObject);
         }
         
-        activeMonsters.Clear();
+        _activeMonsters.Clear();
     }
     
     // Debug methods

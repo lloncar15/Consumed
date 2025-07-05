@@ -46,9 +46,8 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         // Auto-find player if not assigned
-        if (playerController == null)
-        {
-            playerController = FindObjectOfType<PlayerController>();
+        if (playerController == null) {
+            playerController = FindFirstObjectByType<PlayerController>();
         }
         
         if (playerTransform == null && playerController != null)
@@ -125,7 +124,7 @@ public class GameManager : MonoBehaviour
     
     public bool IsPlayerValid()
     {
-        return playerController != null && playerTransform != null;
+        return playerController is not null && playerTransform is not null;
     }
     
     public float GetDistanceToPlayer(Vector2 position)

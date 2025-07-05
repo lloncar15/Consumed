@@ -17,37 +17,37 @@ public class GroundMonster : MonsterBase
     [SerializeField] private float patrolDistance = 5f;
     
     // Movement state
-    private Vector2 patrolCenter;
-    private float patrolDirection = 1f; // 1 for right, -1 for left
-    private float edgePauseTimer;
-    private bool isAtEdge;
-    private bool hasTouchedGround;
+    private Vector2 _patrolCenter;
+    private float _patrolDirection = 1f; // 1 for right, -1 for left
+    private float _edgePauseTimer;
+    private bool _isAtEdge;
+    private bool _hasTouchedGround;
     
     // Components
-    private PlatformDetector platformDetector;
+    private PlatformDetector _platformDetector;
     
     protected override void Awake()
     {
         base.Awake();
         monsterType = MonsterType.Ground;
-        platformDetector = GetComponent<PlatformDetector>();
+        _platformDetector = GetComponent<PlatformDetector>();
         
         // Configure rigidbody for ground movement
-        if (monsterRigidbody)
+        if (MonsterRigidbody)
         {
-            monsterRigidbody.gravityScale = fallGravityScale;
-            monsterRigidbody.freezeRotation = true;
+            MonsterRigidbody.gravityScale = fallGravityScale;
+            MonsterRigidbody.freezeRotation = true;
         }
     }
     
     public override void Initialize()
     {
         base.Initialize();
-        patrolCenter = transform.position;
-        patrolDirection = Random.value > 0.5f ? 1f : -1f; // Random initial direction
-        hasTouchedGround = false;
-        isAtEdge = false;
-        edgePauseTimer = 0f;
+        _patrolCenter = transform.position;
+        _patrolDirection = Random.value > 0.5f ? 1f : -1f; // Random initial direction
+        _hasTouchedGround = false;
+        _isAtEdge = false;
+        _edgePauseTimer = 0f;
     }
     
     protected override void UpdateMonster()
@@ -61,24 +61,24 @@ public class GroundMonster : MonsterBase
     private void HandleGroundDetection()
     {
         // Check if we've just landed
-        if (!hasTouchedGround && platformDetector.IsGrounded)
+        if (!_hasTouchedGround && _platformDetector.IsGrounded)
         {
-            hasTouchedGround = true;
-            patrolCenter = transform.position;
+            _hasTouchedGround = true;
+            _patrolCenter = transform.position;
             
             // Reduce gravity once grounded
-            if (monsterRigidbody)
+            if (MonsterRigidbody)
             {
-                monsterRigidbody.gravityScale = 1f;
+                MonsterRigidbody.gravityScale = 1f;
             }
         }
     }
     
     private void HandleMovement()
     {
-        if (!hasTouchedGround) return; // Still falling
+        if (!_hasTouchedGround) return; // Still falling
         
-        Vector2 velocity = monsterRigidbody.linearVelocity;
+        Vector2 velocity = MonsterRigidbody.linearVelocity;
         
         switch (currentState)
         {
@@ -97,57 +97,57 @@ public class GroundMonster : MonsterBase
         }
         
         // Apply safe movement (respects platform edges)
-        velocity = platformDetector.GetSafeMovementDirection(velocity);
-        monsterRigidbody.linearVelocity = velocity;
+        velocity = _platformDetector.GetSafeMovementDirection(velocity);
+        MonsterRigidbody.linearVelocity = velocity;
     }
     
     private void HandlePatrolMovement(ref Vector2 velocity)
     {
         // Handle edge pausing
-        if (isAtEdge)
+        if (_isAtEdge)
         {
-            edgePauseTimer += Time.deltaTime;
+            _edgePauseTimer += Time.deltaTime;
             velocity.x = 0;
             
-            if (edgePauseTimer >= edgePauseTime)
+            if (_edgePauseTimer >= edgePauseTime)
             {
                 // Change direction and stop being at edge
-                patrolDirection *= -1f;
-                isAtEdge = false;
-                edgePauseTimer = 0f;
+                _patrolDirection *= -1f;
+                _isAtEdge = false;
+                _edgePauseTimer = 0f;
                 FlipSprite();
             }
             return;
         }
         
         // Check for edges
-        bool canContinue = (patrolDirection > 0 && platformDetector.CanMoveRight) ||
-                          (patrolDirection < 0 && platformDetector.CanMoveLeft);
+        bool canContinue = (_patrolDirection > 0 && _platformDetector.CanMoveRight) ||
+                          (_patrolDirection < 0 && _platformDetector.CanMoveLeft);
         
         if (!canContinue)
         {
-            isAtEdge = true;
+            _isAtEdge = true;
             velocity.x = 0;
             return;
         }
         
         // Check patrol distance limits
-        float distanceFromCenter = transform.position.x - patrolCenter.x;
+        float distanceFromCenter = transform.position.x - _patrolCenter.x;
         if (Mathf.Abs(distanceFromCenter) > patrolDistance)
         {
             // Turn around if we've gone too far
-            patrolDirection = distanceFromCenter > 0 ? -1f : 1f;
+            _patrolDirection = distanceFromCenter > 0 ? -1f : 1f;
             FlipSprite();
         }
         
         // Apply patrol movement
-        float targetSpeed = moveSpeed * patrolDirection;
+        float targetSpeed = moveSpeed * _patrolDirection;
         velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, directionChangeSpeed * Time.deltaTime);
     }
     
     private void CheckForPlayerToEat()
     {
-        if (!gameManager || !gameManager.IsPlayerValid() || currentState == MonsterState.Attacking)
+        if (!GameManager || !GameManager.IsPlayerValid() || currentState == MonsterState.Attacking)
             return;
         
         // Check if player is in attack range and we can attack (cooldown finished)
@@ -159,13 +159,13 @@ public class GroundMonster : MonsterBase
         Vector2 directionToPlayer = (playerPos - monsterPos).normalized;
         
         // Check if player is behind the monster
-        bool playerIsBehind = (patrolDirection > 0 && directionToPlayer.x < 0) ||
-                             (patrolDirection < 0 && directionToPlayer.x > 0);
+        bool playerIsBehind = (_patrolDirection > 0 && directionToPlayer.x < 0) ||
+                             (_patrolDirection < 0 && directionToPlayer.x > 0);
         
         if (playerIsBehind)
         {
             // Turn around to face the player
-            patrolDirection *= -1f;
+            _patrolDirection *= -1f;
             FlipSprite();
         }
         
@@ -177,25 +177,25 @@ public class GroundMonster : MonsterBase
     {
         // Update patrol center when grounded to current position
         // This helps when monster falls to a new platform
-        if (hasTouchedGround && platformDetector.IsGrounded && 
+        if (_hasTouchedGround && _platformDetector.IsGrounded && 
             (currentState == MonsterState.Idle || currentState == MonsterState.Spawning))
         {
-            patrolCenter = transform.position;
+            _patrolCenter = transform.position;
         }
     }
     
     private void FlipSprite()
     {
-        if (spriteRenderer)
+        if (SpriteRenderer)
         {
-            spriteRenderer.flipX = patrolDirection < 0;
+            SpriteRenderer.flipX = _patrolDirection < 0;
         }
     }
     
     protected override void HandleIdleState()
     {
         // Go straight to patrolling after spawn
-        if (stateTimer >= idleWaitTime)
+        if (StateTimer >= idleWaitTime)
         {
             TransitionToState(MonsterState.Patrolling);
         }
@@ -220,8 +220,8 @@ public class GroundMonster : MonsterBase
         switch (state)
         {
             case MonsterState.Patrolling:
-                isAtEdge = false;
-                edgePauseTimer = 0f;
+                _isAtEdge = false;
+                _edgePauseTimer = 0f;
                 break;
             case MonsterState.Attacking:
                 // Monster stops and attacks
@@ -274,25 +274,25 @@ public class GroundMonster : MonsterBase
         base.OnDrawGizmos();
         
         // Patrol area
-        if (Application.isPlaying && hasTouchedGround)
+        if (Application.isPlaying && _hasTouchedGround)
         {
             Gizmos.color = Color.cyan;
-            Vector3 leftBound = new Vector3(patrolCenter.x - patrolDistance, patrolCenter.y, 0);
-            Vector3 rightBound = new Vector3(patrolCenter.x + patrolDistance, patrolCenter.y, 0);
+            Vector3 leftBound = new Vector3(_patrolCenter.x - patrolDistance, _patrolCenter.y, 0);
+            Vector3 rightBound = new Vector3(_patrolCenter.x + patrolDistance, _patrolCenter.y, 0);
             Gizmos.DrawLine(leftBound, rightBound);
-            Gizmos.DrawWireSphere(patrolCenter, 0.2f);
+            Gizmos.DrawWireSphere(_patrolCenter, 0.2f);
         }
         
         // Current direction
-        if (Application.isPlaying && patrolDirection != 0)
+        if (Application.isPlaying && _patrolDirection != 0)
         {
             Gizmos.color = Color.magenta;
-            Vector3 directionIndicator = transform.position + Vector3.right * patrolDirection * 0.5f;
+            Vector3 directionIndicator = transform.position + Vector3.right * _patrolDirection * 0.5f;
             Gizmos.DrawLine(transform.position, directionIndicator);
         }
         
         // Edge state indicator
-        if (Application.isPlaying && isAtEdge)
+        if (Application.isPlaying && _isAtEdge)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireCube(transform.position + Vector3.up * 1.5f, Vector3.one * 0.3f);
@@ -301,7 +301,7 @@ public class GroundMonster : MonsterBase
         // Attack cooldown indicator
         if (Application.isPlaying && !CanAttack)
         {
-            Gizmos.color = Color.orange;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position + Vector3.up * 1f, 0.3f);
         }
     }

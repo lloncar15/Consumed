@@ -31,12 +31,12 @@ public class MonsterSpawner : MonoBehaviour
     public static event Action<MonsterBase, Vector2> OnMonsterSpawned;
     
     // References
-    private MonsterPool monsterPool;
+    private MonsterPool _monsterPool;
     
     private void Awake()
     {
         // Get monster pool reference
-        monsterPool = FindObjectOfType<MonsterPool>();
+        _monsterPool = FindFirstObjectByType<MonsterPool>();
     }
     
     private void OnEnable()
@@ -88,9 +88,9 @@ public class MonsterSpawner : MonoBehaviour
         MonsterBase monster = null;
         
         // Try to get from pool first
-        if (monsterPool)
+        if (_monsterPool)
         {
-            monster = monsterPool.GetMonster(type);
+            monster = _monsterPool.GetMonster(type);
         }
         
         // If no pool or pool empty, create new monster
@@ -162,7 +162,7 @@ public class MonsterSpawner : MonoBehaviour
         Vector3 center = transform.position;
         
         // Ground monster spawn area
-        Gizmos.color = Color.brown;
+        Gizmos.color = Color.yellow;
         Vector3 groundPos = center + (Vector3)groundSpawnOffset;
         Gizmos.DrawWireSphere(groundPos, groundSpawnRandomRange);
         Gizmos.DrawLine(center, groundPos);

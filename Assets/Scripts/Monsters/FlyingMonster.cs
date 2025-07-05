@@ -25,15 +25,15 @@ public class FlyingMonster : MonsterBase
     [SerializeField] private float predictionDistance = 1f;
     
     // Movement state
-    private Vector2 currentVelocity;
-    private Vector2 targetVelocity;
-    private Vector2 idleCenter;
-    private float idleFlightAngle;
-    private Vector2 lastPlayerPosition;
-    private Vector2 predictedPlayerPosition;
+    private Vector2 _currentVelocity;
+    private Vector2 _targetVelocity;
+    private Vector2 _idleCenter;
+    private float _idleFlightAngle;
+    private Vector2 _lastPlayerPosition;
+    private Vector2 _predictedPlayerPosition;
     
     // Level bounds
-    private Vector2 levelBounds;
+    private Vector2 _levelBounds;
     
     protected override void Awake()
     {
@@ -41,36 +41,36 @@ public class FlyingMonster : MonsterBase
         monsterType = MonsterType.Flying;
         
         // Flying monsters don't need rigidbody physics
-        if (monsterRigidbody)
+        if (MonsterRigidbody)
         {
-            monsterRigidbody.gravityScale = 0f;
-            monsterRigidbody.bodyType = RigidbodyType2D.Kinematic;
+            MonsterRigidbody.gravityScale = 0f;
+            MonsterRigidbody.bodyType = RigidbodyType2D.Kinematic;
         }
     }
     
     public override void Initialize()
     {
         base.Initialize();
-        idleCenter = transform.position;
-        idleFlightAngle = Random.Range(0f, 360f);
-        currentVelocity = Vector2.zero;
-        targetVelocity = Vector2.zero;
-        lastPlayerPosition = Vector2.zero;
+        _idleCenter = transform.position;
+        _idleFlightAngle = Random.Range(0f, 360f);
+        _currentVelocity = Vector2.zero;
+        _targetVelocity = Vector2.zero;
+        _lastPlayerPosition = Vector2.zero;
         
         // Get level bounds for boundary detection
-        if (gameManager && gameManager.GetComponent<BubbleSystem>())
+        if (GameManager && GameManager.GetComponent<BubbleSystem>())
         {
-            var bubbleSystem = gameManager.GetComponent<BubbleSystem>();
+            var bubbleSystem = GameManager.GetComponent<BubbleSystem>();
             if (bubbleSystem.MovementSettings)
             {
-                levelBounds = bubbleSystem.MovementSettings.GetLevelBounds();
+                _levelBounds = bubbleSystem.MovementSettings.GetLevelBounds();
             }
         }
         
         // Fallback bounds if no bubble system found
-        if (levelBounds == Vector2.zero)
+        if (_levelBounds == Vector2.zero)
         {
-            levelBounds = new Vector2(15f, 10f);
+            _levelBounds = new Vector2(15f, 10f);
         }
     }
     
@@ -85,20 +85,20 @@ public class FlyingMonster : MonsterBase
     
     private void UpdatePlayerPrediction()
     {
-        if (!gameManager || !gameManager.IsPlayerValid()) return;
+        if (!GameManager || !GameManager.IsPlayerValid()) return;
         
         Vector2 currentPlayerPos = GetPlayerPosition();
         
         // Calculate player velocity
         Vector2 playerVelocity = Vector2.zero;
-        if (lastPlayerPosition != Vector2.zero)
+        if (_lastPlayerPosition != Vector2.zero)
         {
-            playerVelocity = (currentPlayerPos - lastPlayerPosition) / Time.deltaTime;
+            playerVelocity = (currentPlayerPos - _lastPlayerPosition) / Time.deltaTime;
         }
         
         // Predict where player will be
-        predictedPlayerPosition = currentPlayerPos + playerVelocity * predictionDistance;
-        lastPlayerPosition = currentPlayerPos;
+        _predictedPlayerPosition = currentPlayerPos + playerVelocity * predictionDistance;
+        _lastPlayerPosition = currentPlayerPos;
     }
     
     private void HandleFlightMovement()
@@ -116,7 +116,7 @@ public class FlyingMonster : MonsterBase
                 HandleAttackFlight();
                 break;
             default:
-                targetVelocity = Vector2.zero;
+                _targetVelocity = Vector2.zero;
                 break;
         }
     }
@@ -124,48 +124,48 @@ public class FlyingMonster : MonsterBase
     private void HandleIdleFlight()
     {
         // Circular flight pattern around spawn point
-        idleFlightAngle += idleFlightSpeed * Time.deltaTime;
-        if (idleFlightAngle >= 360f) idleFlightAngle -= 360f;
+        _idleFlightAngle += idleFlightSpeed * Time.deltaTime;
+        if (_idleFlightAngle >= 360f) _idleFlightAngle -= 360f;
         
         Vector2 circleOffset = new Vector2(
-            Mathf.Cos(idleFlightAngle * Mathf.Deg2Rad),
-            Mathf.Sin(idleFlightAngle * Mathf.Deg2Rad)
+            Mathf.Cos(_idleFlightAngle * Mathf.Deg2Rad),
+            Mathf.Sin(_idleFlightAngle * Mathf.Deg2Rad)
         ) * idleFlightRadius;
         
-        Vector2 targetPosition = idleCenter + circleOffset;
+        Vector2 targetPosition = _idleCenter + circleOffset;
         Vector2 directionToTarget = (targetPosition - (Vector2)transform.position).normalized;
         
-        targetVelocity = directionToTarget * moveSpeed;
+        _targetVelocity = directionToTarget * moveSpeed;
     }
     
     private void HandleChaseFlight()
     {
-        if (!gameManager || !gameManager.IsPlayerValid())
+        if (!GameManager || !GameManager.IsPlayerValid())
         {
             TransitionToState(MonsterState.Patrolling);
             return;
         }
         
-        Vector2 directionToPlayer = (predictedPlayerPosition - (Vector2)transform.position);
+        Vector2 directionToPlayer = (_predictedPlayerPosition - (Vector2)transform.position);
         float distanceToPlayer = directionToPlayer.magnitude;
         
         // Stop chasing if too close (to avoid hovering directly on player)
         if (distanceToPlayer <= chaseStopDistance)
         {
-            targetVelocity = Vector2.zero;
+            _targetVelocity = Vector2.zero;
         }
         else
         {
             // Move toward predicted player position
             directionToPlayer.Normalize();
-            targetVelocity = directionToPlayer * chaseSpeed;
+            _targetVelocity = directionToPlayer * chaseSpeed;
         }
     }
     
     private void HandleAttackFlight()
     {
         // Stop moving during attack
-        targetVelocity = Vector2.zero;
+        _targetVelocity = Vector2.zero;
     }
     
     private void CheckBoundaries()
@@ -174,21 +174,21 @@ public class FlyingMonster : MonsterBase
         Vector2 pushForce = Vector2.zero;
         
         // Check horizontal boundaries
-        if (position.x > levelBounds.x - boundaryBuffer)
+        if (position.x > _levelBounds.x - boundaryBuffer)
         {
             pushForce.x = -1f;
         }
-        else if (position.x < -levelBounds.x + boundaryBuffer)
+        else if (position.x < -_levelBounds.x + boundaryBuffer)
         {
             pushForce.x = 1f;
         }
         
         // Check vertical boundaries
-        if (position.y > levelBounds.y - boundaryBuffer)
+        if (position.y > _levelBounds.y - boundaryBuffer)
         {
             pushForce.y = -1f;
         }
-        else if (position.y < -levelBounds.y + boundaryBuffer)
+        else if (position.y < -_levelBounds.y + boundaryBuffer)
         {
             pushForce.y = 1f;
         }
@@ -196,13 +196,13 @@ public class FlyingMonster : MonsterBase
         // Apply boundary avoidance
         if (pushForce != Vector2.zero)
         {
-            targetVelocity += pushForce.normalized * chaseSpeed * 0.5f;
+            _targetVelocity += pushForce.normalized * (chaseSpeed * 0.5f);
         }
     }
     
     private void CheckForPlayerToAttack()
     {
-        if (!gameManager || !gameManager.IsPlayerValid() || currentState == MonsterState.Attacking)
+        if (!GameManager || !GameManager.IsPlayerValid() || currentState == MonsterState.Attacking)
             return;
         
         // Check if player is in attack range and we can attack
@@ -215,22 +215,22 @@ public class FlyingMonster : MonsterBase
     private void ApplyMovement()
     {
         // Smooth velocity changes
-        float accelRate = targetVelocity.magnitude > 0.1f ? acceleration : deceleration;
-        currentVelocity = Vector2.MoveTowards(currentVelocity, targetVelocity, accelRate * Time.deltaTime);
+        float accelRate = _targetVelocity.magnitude > 0.1f ? acceleration : deceleration;
+        _currentVelocity = Vector2.MoveTowards(_currentVelocity, _targetVelocity, accelRate * Time.deltaTime);
         
         // Clamp to max speed
-        if (currentVelocity.magnitude > chaseSpeed)
+        if (_currentVelocity.magnitude > chaseSpeed)
         {
-            currentVelocity = currentVelocity.normalized * chaseSpeed;
+            _currentVelocity = _currentVelocity.normalized * chaseSpeed;
         }
         
         // Apply movement
-        transform.position += (Vector3)currentVelocity * Time.deltaTime;
+        transform.position += (Vector3)_currentVelocity * Time.deltaTime;
         
         // Handle sprite flipping based on movement direction
-        if (currentVelocity.x != 0 && spriteRenderer)
+        if (_currentVelocity.x != 0 && SpriteRenderer)
         {
-            spriteRenderer.flipX = currentVelocity.x < 0;
+            SpriteRenderer.flipX = _currentVelocity.x < 0;
         }
     }
     
@@ -240,7 +240,7 @@ public class FlyingMonster : MonsterBase
         {
             TransitionToState(MonsterState.Chasing);
         }
-        else if (stateTimer >= idleWaitTime)
+        else if (StateTimer >= idleWaitTime)
         {
             TransitionToState(MonsterState.Patrolling);
         }
@@ -283,10 +283,10 @@ public class FlyingMonster : MonsterBase
         }
         
         // Optional: Quick dash toward player during windup
-        if (gameManager && gameManager.IsPlayerValid())
+        if (GameManager && GameManager.IsPlayerValid())
         {
             Vector2 dashDirection = DirectionToPlayer;
-            targetVelocity = dashDirection * chaseSpeed * 0.5f; // Half speed dash
+            _targetVelocity = dashDirection * chaseSpeed * 0.5f; // Half speed dash
         }
     }
     
@@ -296,7 +296,7 @@ public class FlyingMonster : MonsterBase
         Debug.Log($"{name} finished aerial attack");
         
         // Reset to normal movement
-        targetVelocity = Vector2.zero;
+        _targetVelocity = Vector2.zero;
     }
     
     protected override MonsterState GetStateAfterAttack()
@@ -313,7 +313,7 @@ public class FlyingMonster : MonsterBase
         {
             case MonsterState.Patrolling:
                 // Reset idle center to current position
-                idleCenter = transform.position;
+                _idleCenter = transform.position;
                 break;
             case MonsterState.Attacking:
                 // Stop normal movement during attack (handled in OnAttackStart)
@@ -330,16 +330,16 @@ public class FlyingMonster : MonsterBase
         if (Application.isPlaying)
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(idleCenter, idleFlightRadius);
+            Gizmos.DrawWireSphere(_idleCenter, idleFlightRadius);
             
             // Current target position in idle flight
             if (currentState == MonsterState.Patrolling || currentState == MonsterState.Idle)
             {
                 Vector2 circleOffset = new Vector2(
-                    Mathf.Cos(idleFlightAngle * Mathf.Deg2Rad),
-                    Mathf.Sin(idleFlightAngle * Mathf.Deg2Rad)
+                    Mathf.Cos(_idleFlightAngle * Mathf.Deg2Rad),
+                    Mathf.Sin(_idleFlightAngle * Mathf.Deg2Rad)
                 ) * idleFlightRadius;
-                Vector2 targetPos = idleCenter + circleOffset;
+                Vector2 targetPos = _idleCenter + circleOffset;
                 
                 Gizmos.color = Color.green;
                 Gizmos.DrawWireSphere(targetPos, 0.3f);
@@ -349,28 +349,28 @@ public class FlyingMonster : MonsterBase
         
         // Level boundaries
         Gizmos.color = Color.white;
-        Vector2 bounds = levelBounds - Vector2.one * boundaryBuffer;
+        Vector2 bounds = _levelBounds - Vector2.one * boundaryBuffer;
         Gizmos.DrawWireCube(Vector3.zero, new Vector3(bounds.x * 2, bounds.y * 2, 0));
         
         // Current velocity
-        if (Application.isPlaying && currentVelocity.magnitude > 0.1f)
+        if (Application.isPlaying && _currentVelocity.magnitude > 0.1f)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawLine(transform.position, transform.position + (Vector3)currentVelocity);
+            Gizmos.DrawLine(transform.position, transform.position + (Vector3)_currentVelocity);
         }
         
         // Predicted player position
-        if (Application.isPlaying && gameManager && gameManager.IsPlayerValid())
+        if (Application.isPlaying && GameManager && GameManager.IsPlayerValid())
         {
             Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(predictedPlayerPosition, 0.2f);
-            Gizmos.DrawLine(GetPlayerPosition(), predictedPlayerPosition);
+            Gizmos.DrawWireSphere(_predictedPlayerPosition, 0.2f);
+            Gizmos.DrawLine(GetPlayerPosition(), _predictedPlayerPosition);
         }
         
         // Chase stop distance
         if (Application.isPlaying && currentState == MonsterState.Chasing)
         {
-            Gizmos.color = Color.orange;
+            Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, chaseStopDistance);
         }
     }
