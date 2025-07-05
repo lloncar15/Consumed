@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 214b4f71f52bf8c42a45ccd3efaa3cf1, type: 3}
-  m_Name: EnhancedPlayerMovementStats
+  m_Name: DefaultPlayerMovementStats
   m_EditorClassIdentifier: 
   maxRunSpeed: 12
   runAcceleration: 150

@@ -10,14 +10,14 @@ public abstract class PlayerAbility : ScriptableObject {
     [Header("Input Binding")]
     public KeyCode defaultKey;
     
-    protected EnhancedPlayerController Player;
+    protected PlayerController Player;
     protected float LastUsedTime = -999f;
     
     public bool IsReady => Time.time >= LastUsedTime + cooldown;
     public float CooldownRemaining => Mathf.Max(0, (LastUsedTime + cooldown) - Time.time);
     public float CooldownPercent => IsReady ? 1f : 1f - (CooldownRemaining / cooldown);
     
-    public virtual void Initialize(EnhancedPlayerController playerController)
+    public virtual void Initialize(PlayerController playerController)
     {
         Player = playerController;
     }

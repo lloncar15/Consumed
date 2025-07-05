@@ -12,7 +12,7 @@ public class DoubleJumpAbility : PlayerAbility
     private int _jumpsRemaining;
     private bool _wasGrounded;
     
-    public override void Initialize(EnhancedPlayerController playerController)
+    public override void Initialize(PlayerController playerController)
     {
         base.Initialize(playerController);
         _jumpsRemaining = maxExtraJumps;
@@ -137,7 +137,7 @@ public class GroundPoundAbility : PlayerAbility
     
     private bool _isPounding;
     
-    public override void Initialize(EnhancedPlayerController playerController)
+    public override void Initialize(PlayerController playerController)
     {
         base.Initialize(playerController);
         Player.OnLand += CheckGroundPoundImpact;
